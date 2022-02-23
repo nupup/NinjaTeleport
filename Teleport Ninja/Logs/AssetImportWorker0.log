@@ -730,3 +730,36 @@ Start importing Assets/Animations/Enemy/Walking enemy.controller using Guid(ac2d
 Received Prepare
 Registering precompiled user dll's ...
 Registered in 0.251073 seconds.
+Begin MonoManager ReloadAssembly
+Native extension for OSXStandalone target not found
+Refreshing native plugins compatible for Editor in 3.59 ms, found 4 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Mono: successfully reloaded assembly
+- Completed reload, in 12.776 seconds
+Domain Reload Profiling:
+	ReloadAssembly (12779ms)
+		BeginReloadAssembly (1689ms)
+			ExecutionOrderSort (0ms)
+			DisableScriptedObjects (273ms)
+			BackupInstance (0ms)
+			ReleaseScriptingObjects (0ms)
+			CreateAndSetChildDomain (721ms)
+		EndReloadAssembly (10772ms)
+			LoadAssemblies (1930ms)
+			RebuildTransferFunctionScriptingTraits (0ms)
+			SetupTypeCache (3063ms)
+			ReleaseScriptCaches (4ms)
+			RebuildScriptCaches (1565ms)
+			SetupLoadedEditorAssemblies (3483ms)
+				LogAssemblyErrors (1ms)
+				InitializePlatformSupportModulesInManaged (18ms)
+				SetLoadedEditorAssemblies (1ms)
+				RefreshPlugins (4ms)
+				BeforeProcessingInitializeOnLoad (251ms)
+				ProcessInitializeOnLoadAttributes (2775ms)
+				ProcessInitializeOnLoadMethodAttributes (430ms)
+				AfterProcessingInitializeOnLoad (3ms)
+				EditorAssembliesLoaded (1ms)
+			ExecutionOrderSort2 (0ms)
+			AwakeInstancesAfterBackupRestoration (112ms)
+Platform modules already initialized, skipping
