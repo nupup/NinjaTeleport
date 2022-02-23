@@ -110,7 +110,7 @@ public class AttackMoveController : MonoBehaviour
             return;
 
         //Melee attack
-        if (IsTargetTooClose(2) && GameManager.Instance.State == GameState.Killing)
+        if (IsTargetTooClose(2) && GameManager.Instance.State != GameState.Killing)
             Kill();
     }
 
