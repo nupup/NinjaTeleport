@@ -101,35 +101,22 @@ public class AttackMoveController : MonoBehaviour
             Cursor.visible = false;
         }
 
-        target = screenTargets[targetIndex()];
+        ConstantlySwitchTarget();
 
-        //only swithc target if user is controlling the aim
-        if (Input.touchCount > 0 && GameManager.Instance.State == GameState.Aiming)
-        {
-            //Make sure the touch is not over a UI element
-            foreach (Touch touch in Input.touches)
-            {
-                int id = touch.fingerId;
-                if (!EventSystem.current.IsPointerOverGameObject(id))
-                {
-                     SwitchTarget(target);
-                }
-            }
-        }
-
-        if (GameManager.Instance.State == GameState.Killing)
+        if (isLocked)
             transform.DOLookAt(enemyToKill.transform.position, 0);
 
         if (GameManager.Instance.State == GameState.Aiming)
             return;
 
         //Melee attack
-        if (IsTargetTooClose(2) && !isLocked)
+        if (IsTargetTooClose(2) && GameManager.Instance.State == GameState.Killing)
             Kill();
     }
 
     public void Kill()
     {
+        Debug.Log("KILL");
         //dont switch between enemies
         isLocked = true;
         //Fix rotation
@@ -147,35 +134,59 @@ public class AttackMoveController : MonoBehaviour
         transform.DOLookAt(new Vector3(enemyToKill.transform.position.x, transform.position.y, enemyToKill.transform.position.z), 0.2f);
     }
 
-    private bool IsTargetVisible()
+    private void ConstantlySwitchTarget()
     {
-        RaycastHit rayHit;
-        Ray rayTest = new Ray(transform.position, transform.position - target.transform.position);
-
-        if (Physics.Raycast(rayTest, out rayHit))
+        if (GameManager.Instance.State == GameState.Walking)
         {
-            if (rayHit.collider.gameObject.tag == "Obstacle")
+            SwitchTarget(screenTargets[targetIndex()]);
+        }
+
+        if (Input.touchCount > 0)
+        {
+            if (GameManager.Instance.State == GameState.Aiming)
             {
-                Debug.Log("wall");
+                //Make sure the touch is not over a UI element
+                foreach (Touch touch in Input.touches)
+                {
+                    int id = touch.fingerId;
+                    if (!EventSystem.current.IsPointerOverGameObject(id))
+                    {
+                        SwitchTarget(screenTargets[targetIndex()]);
+                    }
+                }
+            }
+        }
+    }
+
+    private bool IsTargetVisible(Transform targetPos)
+    {
+        Debug.Log("ray cast");
+        var ray = new Ray(transform.position, (targetPos.transform.position - transform.position));
+        Debug.DrawRay(transform.position, (targetPos.transform.position - transform.position), Color.blue, 10);
+        RaycastHit hit;
+
+        if (Physics.Raycast(ray, out hit)){
+            //obstacel is 9
+            if (hit.transform.gameObject.layer == 9)
+            {
                 return false;
             }
-            else
-            {
-                Debug.Log("no wall");
-                return true;
-            }
+            
         }
         return true;
     }
 
-    private void SwitchTarget(Transform currentTarget)
+    private void SwitchTarget(Transform proposedTarget)
     {
         //if new target is selected
-        if (currentTarget != oldTarget)
+        if (proposedTarget != oldTarget)
         {
-            Debug.Log("new target selected");
-            oldTarget = currentTarget;
-            HighlightTarget();
+            if (IsTargetVisible(proposedTarget))
+            {
+                target = proposedTarget;
+                oldTarget = target;
+                HighlightTarget();
+            }
         }
     }
 
@@ -209,6 +220,7 @@ public class AttackMoveController : MonoBehaviour
 
     public void Warp()
     {
+        isLocked = false;
         //rotate towards starget
         transform.DOLookAt(new Vector3(enemyToKill.transform.position.x, transform.position.y, enemyToKill.transform.position.z), 0.1f);
 
@@ -285,7 +297,7 @@ public class AttackMoveController : MonoBehaviour
 
     bool IsTargetTooClose(float distance)
     {
-        if (Vector3.Distance(target.transform.position, transform.position) < distance)
+        if (target!= null && Vector3.Distance(target.transform.position, transform.position) < distance)
         {
             return true;
         }
