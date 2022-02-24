@@ -5,6 +5,9 @@ TagManager:
   serializedVersion: 2
   tags:
   - Target
+  - Cone
+  - Obstacle
+  - KilledTarget
   layers:
   - Default
   - TransparentFX

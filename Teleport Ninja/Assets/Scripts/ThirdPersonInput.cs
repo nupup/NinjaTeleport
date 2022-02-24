@@ -34,7 +34,7 @@ public class ThirdPersonInput : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (GameManager.Instance.State == GameState.Walking)
+        if (GameManager.Instance.State == GameState.Walking || GameManager.Instance.State == GameState.QuickKilling)
         {
             control.HInput = mainJoystick.Direction.x;
             control.VInput = mainJoystick.Direction.y;

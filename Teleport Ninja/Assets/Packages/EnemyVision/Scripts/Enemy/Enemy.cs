@@ -30,6 +30,11 @@ namespace IndieMarc.EnemyVision
     [RequireComponent(typeof(Rigidbody))]
     public class Enemy : MonoBehaviour
     {
+        private EnemyGun enemyGun;
+        private Animator anim;
+        private bool isShootingWalking;
+        private bool isIdle;
+        public bool isDead;
         public float move_speed = 2f;
         public float run_speed = 4f;
         public float rotate_speed = 120f;
@@ -57,7 +62,6 @@ namespace IndieMarc.EnemyVision
 
         private Rigidbody rigid;
         private NavMeshAgent nav_agent;
-        private Animator anim;
 
         private Vector3 start_pos;
         private Vector3 move_vect;
@@ -89,6 +93,7 @@ namespace IndieMarc.EnemyVision
 
         private void Awake()
         {
+            enemyGun = GetComponentInChildren<EnemyGun>();
             anim = GetComponent<Animator>();
             enemy_list.Add(this);
             rigid = GetComponent<Rigidbody>();
@@ -123,17 +128,20 @@ namespace IndieMarc.EnemyVision
 
         void Start()
         {
-            anim.SetBool("walk", false);
-
-            if (patrol_path.Length != 0)
+            if (patrol_path.Length == 0)
             {
-                anim.SetBool("walk", true);
+                anim.SetInteger("state", 1);
+                isIdle = true;
             }
+            else
+                anim.SetInteger("state", 2);
+
+
         }
 
         private void FixedUpdate()
         {
-            if (paused)
+            if (paused || isDead)
                 return;
 
             bool fronted = CheckFronted(transform.forward);
@@ -166,7 +174,7 @@ namespace IndieMarc.EnemyVision
 
         private void Update()
         {
-            if (paused)
+            if (paused || isDead)
                 return;
 
             state_timer += Time.deltaTime;
@@ -174,22 +182,31 @@ namespace IndieMarc.EnemyVision
 
             if (state == EnemyState.Alert)
             {
+                if (!isShootingWalking)
+                    anim.SetInteger("state", 3);
+
                 UpdateAlert();
             }
 
             if (state == EnemyState.Patrol)
             {
+                if (isIdle)
+                    anim.SetInteger("state", 1);
+                else
+                    anim.SetInteger("state", 2);
+
                 UpdatePatrol();
             }
 
             if (state == EnemyState.Chase)
             {
-                anim.SetBool("walk", true);
+                anim.SetInteger("state", 4);
                 UpdateFollow();
             }
 
             if (state == EnemyState.Confused)
             {
+                anim.SetInteger("state", 3);
                 UpdateConfused();
             }
 
@@ -220,7 +237,13 @@ namespace IndieMarc.EnemyVision
             }
             else if(state_timer < alert_wait_time + alert_walk_time)
             {
-                MoveTo(alert_target, move_speed);
+                if (!isIdle)
+                {
+                    MoveTo(alert_target, move_speed);
+                    isShootingWalking = true;
+                    anim.SetInteger("state", 4);
+                }
+                    
             }
         }
 
@@ -339,9 +362,6 @@ namespace IndieMarc.EnemyVision
 
         private void GoToNextPath()
         {
-            Debug.Log("reached target");
-            anim.SetBool("walk", false);
-
             if (type == EnemyPatrolType.FacingOnly)
             {
                 if (current_path <= 0 || current_path >= path_list.Count - 1)
@@ -414,7 +434,6 @@ namespace IndieMarc.EnemyVision
 
         public void StopMove()
         {
-            anim.SetBool("walk", false);
             using_navmesh = false;
             move_target = rigid.position;
             current_move = Vector3.zero;
@@ -433,10 +452,23 @@ namespace IndieMarc.EnemyVision
 
         public void ChangeState(EnemyState state)
         {
+            if (isDead)
+                return;
+
             this.state = state;
             state_timer = 0f;
             wait_timer = 0f;
             waiting = false;
+
+            switch (state)
+            {
+                case EnemyState.Alert:
+                    enemyGun.Shoot();
+                    break;
+                case EnemyState.Patrol:
+                    enemyGun.StopShooting();
+                    break;
+            }
         }
 
         public void Pause()

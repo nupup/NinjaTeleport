@@ -58,7 +58,10 @@ public class GameManager : MonoBehaviour
                 timeManager.RemoveSlowMotion();
                 attackMoveController.Kill();
                 break;
+            case GameState.QuickKilling:
+                break;
             case GameState.Victory:
+                StartCoroutine("NextLevel");
                 break;
             case GameState.Lose:
                 StartCoroutine("RestartScene");
@@ -70,8 +73,24 @@ public class GameManager : MonoBehaviour
 
     private IEnumerator RestartScene()
     {
-        yield return new WaitForSeconds(1);
+        yield return new WaitForSeconds(2);
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
+
+    private IEnumerator NextLevel()
+    {
+        yield return new WaitForSeconds(2);
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
+    }
+
+    public bool AreEnemiesDead()
+    {
+        if (GameObject.FindGameObjectsWithTag("Target").Length == 0)
+        {
+            GameManager.Instance.UpdateGameState(GameState.Victory);
+            return true;
+        }
+        return false;
     }
 
 }
@@ -81,6 +100,7 @@ public enum GameState
     Walking,
     Aiming,
     Killing,
+    QuickKilling,
     Victory,
     Lose
 }

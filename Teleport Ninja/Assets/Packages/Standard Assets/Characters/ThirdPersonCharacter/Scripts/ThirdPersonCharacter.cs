@@ -118,9 +118,9 @@ namespace UnityStandardAssets.Characters.ThirdPerson
 
 		void UpdateAnimator(Vector3 move)
 		{
-			// update the animator parameters
-
-			transform.position += transform.forward * Time.deltaTime * m_ForwardAmount * RUN_SPEED;
+			//walk forward
+			if (GameManager.Instance.State == GameState.Walking)
+				transform.position += transform.forward * Time.deltaTime * m_ForwardAmount * RUN_SPEED;
 
 			m_Animator.SetFloat("Forward", m_ForwardAmount, 0.1f, Time.deltaTime);
 			m_Animator.SetFloat("Turn", m_TurnAmount, 0.1f, Time.deltaTime);

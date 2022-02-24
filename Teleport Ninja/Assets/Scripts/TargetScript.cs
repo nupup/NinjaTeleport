@@ -9,6 +9,7 @@ public class TargetScript : MonoBehaviour
     private SkinnedMeshRenderer skinnedMeshRenderer;
     public Material highlightedColor;
     private Material usualColor;
+    public Material blackColor;
 
     void Start()
     {
@@ -38,5 +39,10 @@ public class TargetScript : MonoBehaviour
     {
         if (GameManager.Instance.State != GameState.Killing)
             skinnedMeshRenderer.material = usualColor;
+    }
+
+    public void DeadHighlight()
+    {
+        skinnedMeshRenderer.material = blackColor;
     }
 }

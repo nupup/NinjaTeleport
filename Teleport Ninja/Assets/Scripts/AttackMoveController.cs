@@ -7,6 +7,7 @@ using Cinemachine;
 using System;
 using UnityEngine.Rendering.PostProcessing;
 using UnityEngine.EventSystems;
+using IndieMarc.EnemyVision;
 
 public class AttackMoveController : MonoBehaviour
 {
@@ -16,11 +17,14 @@ public class AttackMoveController : MonoBehaviour
     private CameraController cameraController;
     private ClickDetection clickDetector;
 
-    private bool isLocked;
-    public bool canSwitchTarget;
+    private bool isLocked; //for rotation towards enemy, this stops once teleport happens
+    private bool killing; //for the quick slash, to make sure the attack does not hapen twice
+    public bool canSwitchTarget; //Is locked if attack is happening
 
     public CinemachineVirtualCamera cameraFreeLook;
+    public CinemachineVirtualCamera cameraWalk;
     private CinemachineImpulseSource impulse;
+    private CinemachineImpulseSource impulseWalk;
     private PostProcessVolume postVolume;
     private PostProcessProfile postProfile;
 
@@ -65,6 +69,7 @@ public class AttackMoveController : MonoBehaviour
         //Cursor.visible = false;
         clickDetector = GameObject.Find("ClickDetector").GetComponent<ClickDetection>();
         anim = GetComponent<Animator>();
+        impulseWalk = cameraWalk.GetComponent<CinemachineImpulseSource>();
         impulse = cameraFreeLook.GetComponent<CinemachineImpulseSource>();
         postVolume = Camera.main.GetComponent<PostProcessVolume>();
         swordOrigRot = sword.localEulerAngles;
@@ -89,38 +94,52 @@ public class AttackMoveController : MonoBehaviour
             case GameState.Aiming:
                 transform.DOLookAt(target.transform.position, 0.02f);
                 break;
+            case GameState.Lose:
+                anim.SetTrigger("die");
+                break;
         }
     }
 
     // Update is called once per frame
     void Update()
     {
+        if (GameManager.Instance.State == GameState.Victory)
+            return;
 
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             Cursor.visible = false;
         }
 
+        //Switch target in case new one is aimed at
         ConstantlySwitchTarget();
 
+        //Rotate towards target if in process of warping
         if (isLocked)
             transform.DOLookAt(enemyToKill.transform.position, 0);
 
         if (GameManager.Instance.State == GameState.Aiming)
             return;
 
-        //Melee attack
-        if (IsTargetTooClose(2) && GameManager.Instance.State != GameState.Killing)
+        //Melee attack if not killing already
+        if (IsTargetTooClose(2) && !isLocked && GameManager.Instance.State == GameState.Walking) {
+            GameManager.Instance.UpdateGameState(GameState.QuickKilling);
             Kill();
+        }
+
+            
     }
 
     public void Kill()
     {
-        Debug.Log("KILL");
-        //dont switch between enemies
-        isLocked = true;
-        //Fix rotation
+        if (target == null)
+            GameManager.Instance.UpdateGameState(GameState.Walking);
+
         enemyToKill = target.gameObject;
+        enemyToKill.transform.parent.tag = "KilledTarget";
+
+        killing = true;
+        enemyToKill.GetComponentInParent<Enemy>().isDead = true;
 
         swordParticle.Play();
         swordMesh.enabled = true;
@@ -128,7 +147,10 @@ public class AttackMoveController : MonoBehaviour
         if (isTargetTooClose)
             anim.SetTrigger("quickSlash");
         else
+        {
+            isLocked = true;
             anim.SetTrigger("slash");
+        }
 
         //rotate toward starget
         transform.DOLookAt(new Vector3(enemyToKill.transform.position.x, transform.position.y, enemyToKill.transform.position.z), 0.2f);
@@ -138,7 +160,8 @@ public class AttackMoveController : MonoBehaviour
     {
         if (GameManager.Instance.State == GameState.Walking)
         {
-            SwitchTarget(screenTargets[targetIndex()]);
+            if (screenTargets.Count != 0)
+                SwitchTarget(screenTargets[targetIndex()]);
         }
 
         if (Input.touchCount > 0)
@@ -159,21 +182,22 @@ public class AttackMoveController : MonoBehaviour
     }
 
     private bool IsTargetVisible(Transform targetPos)
-    {
-        Debug.Log("ray cast");
-        var ray = new Ray(transform.position, (targetPos.transform.position - transform.position));
-        Debug.DrawRay(transform.position, (targetPos.transform.position - transform.position), Color.blue, 10);
+    { 
+        if (targetPos == null)
+            return false;
+
+        var ray = new Ray(transform.position, (targetPos.transform.parent.position - transform.position));
         RaycastHit hit;
 
         if (Physics.Raycast(ray, out hit)){
             //obstacel is 9
-            if (hit.transform.gameObject.layer == 9)
+            if (hit.transform.gameObject.layer != 9)
             {
-                return false;
+                return true;
             }
             
         }
-        return true;
+        return false;
     }
 
     private void SwitchTarget(Transform proposedTarget)
@@ -183,10 +207,22 @@ public class AttackMoveController : MonoBehaviour
         {
             if (IsTargetVisible(proposedTarget))
             {
+                Debug.Log("target visible and assigned");
                 target = proposedTarget;
                 oldTarget = target;
-                HighlightTarget();
+                if (GameManager.Instance.State == GameState.Aiming)
+                    HighlightTarget();
             }
+            else
+            {
+                Debug.Log("target not visible");
+                target = null;
+                foreach (Transform t in screenTargets)
+                {
+                    t.GetComponent<TargetScript>().UnHighlight();
+                }
+            }
+                
         }
     }
 
@@ -242,6 +278,24 @@ public class AttackMoveController : MonoBehaviour
         DOVirtual.Float(1, 2f, .2f, ScaleAmount);
     }
 
+    public void ProposeAim()
+    {
+        for (int i = 0;i < screenTargets.Count;i++)
+        {
+            if (IsTargetVisible(screenTargets[i]) && !screenTargets[i].GetComponentInParent<Enemy>().isDead)
+            {
+                if (target == null)
+                    target = screenTargets[i];
+
+                HighlightTarget();
+                GameManager.Instance.UpdateGameState(GameState.Aiming);
+                return;
+            }
+            //if not, shake cam
+            impulseWalk.GenerateImpulse(Vector3.right);
+        }
+    }
+
 
     void DoneWarp()
     {
@@ -249,14 +303,14 @@ public class AttackMoveController : MonoBehaviour
         sword.localPosition = swordOrigPos;
         sword.localEulerAngles = swordOrigRot;
         FinishAttack();
-        StartCoroutine(DeleteEnemy(0.7f));
+        StartCoroutine(DeleteEnemy(1.5f));
         StartCoroutine(FixSword());
     }
 
     void DoneQuickSlash()
     {
         FinishAttack();
-        StartCoroutine(DeleteEnemy(0.3f));
+        StartCoroutine(DeleteEnemy(1.5f));
 
         swordMesh.enabled = false;
 
@@ -266,7 +320,9 @@ public class AttackMoveController : MonoBehaviour
 
     void FinishAttack()
     {
-        GameManager.Instance.UpdateGameState(GameState.Walking);
+        if (!GameManager.Instance.AreEnemiesDead())
+            GameManager.Instance.UpdateGameState(GameState.Walking);
+
         ShowBody(true);
 
         SkinnedMeshRenderer[] skinMeshList = GetComponentsInChildren<SkinnedMeshRenderer>();
@@ -278,7 +334,14 @@ public class AttackMoveController : MonoBehaviour
 
         Instantiate(hitParticle, sword.position, Quaternion.identity);
 
-        enemyToKill.GetComponentInParent<Animator>().SetTrigger("hit");
+        foreach (Transform child in enemyToKill.transform.parent)
+        {
+            if (child.tag == "Cone")
+                Destroy(child.gameObject);
+        }
+
+        enemyToKill.GetComponent<TargetScript>().DeadHighlight();
+        enemyToKill.GetComponentInParent<Animator>().SetInteger("state",5);
         enemyToKill.transform.parent.DOMove(target.position + transform.forward, .5f);
 
         //StartCoroutine(HideSword());
@@ -313,6 +376,7 @@ public class AttackMoveController : MonoBehaviour
         screenTargets.Remove(oldTarget.transform);
         yield return new WaitForSeconds(timer);
         Destroy(oldTarget.transform.parent.gameObject);
+        killing = false;
         yield return new WaitForSeconds(2);
         //Fix rotation
         transform.eulerAngles = new Vector3(0, transform.eulerAngles.y, transform.eulerAngles.z);
@@ -379,7 +443,6 @@ public class AttackMoveController : MonoBehaviour
             if (minDistance == distances[i])
                 index = i;
         }
-
         return index;
 
     }

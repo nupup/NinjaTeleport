@@ -391,6 +391,7 @@ namespace IndieMarc.EnemyVision
                 if(enemy != null)
                     enemy.Follow(seen_character.gameObject);
             }
+            
         }
 
         //Call this function from another script to stop chasing, may not work if the target is still in vision because it will just start chasing again
