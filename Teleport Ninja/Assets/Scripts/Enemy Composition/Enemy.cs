@@ -6,15 +6,6 @@ using UnityEngine.AI;
 
 namespace IndieMarc.EnemyVision
 {
-    public enum EnemyState
-    {
-        None = 0,
-        Patrol = 2,
-        Alert = 5,
-        Chase = 10,
-        Confused = 15, //After lost track of target
-        Wait=20,
-    }
 
     public enum EnemyPatrolType
     {
@@ -41,9 +32,8 @@ namespace IndieMarc.EnemyVision
         public float fall_speed = 5f;
         public LayerMask obstacle_mask = ~(0);
         public bool use_pathfind = false;
+        private EnemyManager enemyManager;
 
-        [Header("State")]
-        public EnemyState state = EnemyState.Patrol;
 
         [Header("Patrol")]
         public EnemyPatrolType type;
@@ -67,7 +57,6 @@ namespace IndieMarc.EnemyVision
         private Vector3 move_vect;
         private Vector3 face_vect;
         private float rotate_val;
-        private float state_timer = 0f;
         private bool paused = false;
 
         private Vector3 move_target;
@@ -77,7 +66,6 @@ namespace IndieMarc.EnemyVision
         private Vector3 current_rot_target;
         private float current_rot_mult = 1f;
         private bool waiting = false;
-        private float wait_timer = 0f;
 
         private int current_path = 0;
         private bool path_rewind = false;
@@ -93,6 +81,7 @@ namespace IndieMarc.EnemyVision
 
         private void Awake()
         {
+            enemyManager = GetComponent<EnemyManager>();
             enemyGun = GetComponentInChildren<EnemyGun>();
             anim = GetComponent<Animator>();
             enemy_list.Add(this);
@@ -174,39 +163,24 @@ namespace IndieMarc.EnemyVision
 
         private void Update()
         {
-            if (paused || isDead)
-                return;
 
-            state_timer += Time.deltaTime;
-            wait_timer += Time.deltaTime;
-
-            if (state == EnemyState.Alert)
+            if (enemyManager.GetState() == enemyManager.EnemyState.Alert)
             {
-                if (!isShootingWalking)
-                    anim.SetInteger("state", 3);
-
                 UpdateAlert();
             }
 
             if (state == EnemyState.Patrol)
             {
-                if (isIdle)
-                    anim.SetInteger("state", 1);
-                else
-                    anim.SetInteger("state", 2);
-
                 UpdatePatrol();
             }
 
             if (state == EnemyState.Chase)
             {
-                anim.SetInteger("state", 4);
                 UpdateFollow();
             }
 
             if (state == EnemyState.Confused)
             {
-                anim.SetInteger("state", 3);
                 UpdateConfused();
             }
 
@@ -450,37 +424,6 @@ namespace IndieMarc.EnemyVision
             Destroy(gameObject);
         }
 
-        public void ChangeState(EnemyState state)
-        {
-            if (isDead)
-                return;
-
-            this.state = state;
-            state_timer = 0f;
-            wait_timer = 0f;
-            waiting = false;
-
-            switch (state)
-            {
-                case EnemyState.Alert:
-                    enemyGun.Shoot();
-                    break;
-                case EnemyState.Patrol:
-                    enemyGun.StopShooting();
-                    break;
-            }
-        }
-
-        public void Pause()
-        {
-            paused = true;
-        }
-
-        public void UnPause()
-        {
-            paused = false;
-        }
-
         //---- Check state -----
 
         public bool CheckFronted(Vector3 dir)
@@ -529,34 +472,9 @@ namespace IndieMarc.EnemyVision
             return center + offset;
         }
 
-        public EnemyState GetState()
-        {
-            return state;
-        }
-
         public float GetStateTimer()
         {
             return state_timer;
-        }
-
-        public Vector3 GetMove()
-        {
-            return move_vect;
-        }
-
-        public Vector3 GetFacing()
-        {
-            return face_vect;
-        }
-
-        public float GetRotationVelocity()
-        {
-            return rotate_val;
-        }
-
-        public bool IsRunning()
-        {
-            return state == EnemyState.Chase;
         }
 
         public Vector3 GetNextTarget()
@@ -564,11 +482,6 @@ namespace IndieMarc.EnemyVision
             if (use_pathfind && nav_agent && nav_agent.enabled && using_navmesh && nav_agent.hasPath)
                 return nav_agent.nextPosition;
             return move_target;
-        }
-
-        public bool IsPaused()
-        {
-            return paused;
         }
 
         public static Enemy GetNearest(Vector3 pos, float range = 999f)

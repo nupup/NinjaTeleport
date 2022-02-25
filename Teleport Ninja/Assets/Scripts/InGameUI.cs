@@ -5,13 +5,17 @@ using UnityEngine.UI;
 
 public class InGameUI : MonoBehaviour
 {
-    public Button KillButton;
+    public Button killButton;
+    public Button cancelKillButton;
     public DynamicJoystick mainJoystick;
+
+    public GameObject killScreen;
 
     // Start is called before the first frame update
     void Start()
     {
-        KillButton.onClick.AddListener(KillPressed);
+        killButton.onClick.AddListener(KillPressed);
+        cancelKillButton.onClick.AddListener(CancelKillPressed);
     }
 
     // Update is called once per frame
@@ -26,19 +30,25 @@ public class InGameUI : MonoBehaviour
         GameManager.Instance.UpdateGameState(GameState.Killing);
     }
 
+    void CancelKillPressed()
+    {
+        GameManager.Instance.UpdateGameState(GameState.Walking);
+    }
+
     public void AimingUI()
     {
-        KillButton.gameObject.SetActive(true);
+        killScreen.gameObject.SetActive(true);
         mainJoystick.gameObject.SetActive(false);
     }
 
     public void KillingUI()
     {
-        KillButton.gameObject.SetActive(false);
+        killScreen.gameObject.SetActive(false);
     }
 
     public void WalkingUI()
     {
+        killScreen.gameObject.SetActive(false);
         mainJoystick.gameObject.SetActive(true);
     }
 }

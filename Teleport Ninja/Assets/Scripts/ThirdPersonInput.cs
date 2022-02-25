@@ -50,7 +50,6 @@ public class ThirdPersonInput : MonoBehaviour
 
                 if (touch.phase == TouchPhase.Moved)
                 {
-                    Debug.Log("touch without it");
                     rotationY = Quaternion.Euler(
                         0f,
                         touch.deltaPosition.x * rotationSpeed * Time.deltaTime,

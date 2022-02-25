@@ -45,6 +45,7 @@ public class GameManager : MonoBehaviour
         switch (newState)
         {
             case GameState.Walking:
+                timeManager.RemoveSlowMotion();
                 cameraController.SwitchToWalk();
                 inGameUI.WalkingUI();
                 break;
@@ -80,7 +81,14 @@ public class GameManager : MonoBehaviour
     private IEnumerator NextLevel()
     {
         yield return new WaitForSeconds(2);
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
+        try
+        {
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
+        }
+        catch (Exception e)
+        {
+            SceneManager.LoadScene(1);
+        }
     }
 
     public bool AreEnemiesDead()
