@@ -8,7 +8,6 @@ TagManager:
   - Cone
   - Obstacle
   - KilledTarget
-  - Water
   layers:
   - Default
   - TransparentFX

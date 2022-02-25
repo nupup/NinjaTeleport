@@ -23,12 +23,4 @@ public class Bullet : MonoBehaviour
             GameManager.Instance.UpdateGameState(GameState.Lose);
         }
     }
-
-    private void OnCollisionEnter(Collision other)
-    {
-        if (other.gameObject.CompareTag("Obstacle"))
-        {
-            Destroy(gameObject);
-        }
-    }
 }

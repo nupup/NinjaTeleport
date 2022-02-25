@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+<<<<<<< HEAD:Teleport Ninja/Assets/Packages/EnemyVision/Scripts/Enemy/Vision.cs.meta
+guid: 59cf9e194277b45e797ed8a78bf3feff
+=======
+guid: 0a3b5e58f3bb24d0aa0f8030c3ea4a2b
+>>>>>>> parent of 480abe2 (pre enemy composition):Teleport Ninja/Assets/Scripts/EnemyPatrol.cs.meta
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

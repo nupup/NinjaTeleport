@@ -7,7 +7,6 @@ using Cinemachine;
 using System;
 using UnityEngine.Rendering.PostProcessing;
 using UnityEngine.EventSystems;
-using IndieMarc.EnemyVision;
 
 public class AttackMoveController : MonoBehaviour
 {
@@ -133,16 +132,13 @@ public class AttackMoveController : MonoBehaviour
     public void Kill()
     {
         if (target == null)
-        {
             GameManager.Instance.UpdateGameState(GameState.Walking);
-            return;
-        }
 
         enemyToKill = target.gameObject;
         enemyToKill.transform.parent.tag = "KilledTarget";
 
         killing = true;
-        enemyToKill.GetComponentInParent<Enemy>().isDead = true;
+        //enemyToKill.GetComponentInParent<Enemy>().isDead = true;
 
         swordParticle.Play();
         swordMesh.enabled = true;
@@ -189,7 +185,6 @@ public class AttackMoveController : MonoBehaviour
         if (targetPos == null)
             return false;
 
-        Debug.DrawRay(transform.position, (targetPos.transform.parent.position - transform.position), Color.blue, 5f);
         var ray = new Ray(transform.position, (targetPos.transform.parent.position - transform.position));
         RaycastHit hit;
 
@@ -284,31 +279,19 @@ public class AttackMoveController : MonoBehaviour
 
     public void ProposeAim()
     {
-        //find the closest available target to aim towards, if none are in the view then decline aim and shake cam
-        float closestDistance = 99999;
-        Transform closestTarget = null;
         for (int i = 0;i < screenTargets.Count;i++)
         {
-            if (IsTargetVisible(screenTargets[i]) && !screenTargets[i].GetComponentInParent<Enemy>().isDead)
+            //add and if enemy is not dead
+            if (IsTargetVisible(screenTargets[i]))
             {
-                float distance = Vector3.Distance(screenTargets[i].transform.position, transform.position);
-                if (distance < closestDistance)
-                {
-                    closestDistance = distance;
-                    closestTarget = screenTargets[i];
-                }
-            }
-        }
-        if (closestTarget != null)
-        {
-            Debug.Log("propose aim adhered");
-            target = closestTarget;
-            HighlightTarget();
-            GameManager.Instance.UpdateGameState(GameState.Aiming);
+                if (target == null)
+                    target = screenTargets[i];
 
-        }
-        else
-        {
+                HighlightTarget();
+                GameManager.Instance.UpdateGameState(GameState.Aiming);
+                return;
+            }
+            //if not, shake cam
             impulseWalk.GenerateImpulse(Vector3.right);
         }
     }
